@@ -2,7 +2,6 @@
 """
 Mac Autoclicker
 A simple autoclicker that can be toggled on/off with a key press
-and allows changing the clicks per second (CPS).
 """
 
 import time
@@ -16,23 +15,21 @@ class AutoClicker:
     def __init__(self):
         self.is_running = False
         self.click_thread = None
-        self.cps = 1.0  # Clicks per second
+        self.cps = 1.0  # Current CPS
         self.min_interval = 0.033  # Minimum interval between clicks (33ms for up to 30 CPS)
         
-        # Disable pyautogui's fail-safe
-        pyautogui.FAILSAFE = False
+        # Pyautogui's fail-safe, stops script when mouse is moved to top left corner
+        pyautogui.FAILSAFE = True
         
         # Set up keyboard listener
         self.keyboard_listener = keyboard.Listener(on_press=self.on_key_press)
-        
-        print("=== Mac Autoclicker ===")
-        print("Controls:")
+
+        # Print controls
         print("  F6 - Toggle autoclicker on/off")
         print("  F7 - Increase CPS")
         print("  F8 - Decrease CPS")
         print("  F9 - Quit")
         print(f"Current CPS: {self.cps} (Max: 30)")
-        print("Press F6 to start...")
     
     def on_key_press(self, key):
         try:
@@ -54,29 +51,32 @@ class AutoClicker:
             self.start_clicking()
     
     def start_clicking(self):
+        # Added redundancy to prevent multiple threads from being created
         if not self.is_running:
             self.is_running = True
+            # Let specific task run in background while main program runs, rest of program doesn't wait
+            # daemon=True causes thread to end when main thread exits
             self.click_thread = threading.Thread(target=self.click_loop, daemon=True)
             self.click_thread.start()
             print(f"Autoclicker STARTED - CPS: {self.cps}")
     
     def stop_clicking(self):
+        #Redundancy to prevent multiple threads from being created
         if self.is_running:
             self.is_running = False
             if self.click_thread:
+                # Wait for thread to finish, timeout after 0.1 seconds
                 self.click_thread.join(timeout=0.1)
             print("Autoclicker STOPPED")
     
     def click_loop(self):
         while self.is_running:
             try:
-                # Calculate interval based on CPS
+                # Calculate interval based on CPS, min interval to control clicks per second
                 interval = max(1.0 / self.cps, self.min_interval)
                 
                 # Perform click
                 pyautogui.click()
-                
-                # Wait for next click
                 time.sleep(interval)
             except Exception as e:
                 print(f"Error in click loop: {e}")
@@ -84,22 +84,23 @@ class AutoClicker:
     
     def increase_cps(self):
         if self.cps < 30.0:  # Max 30 CPS
-            self.cps += 0.5
+            self.cps += 1
             print(f"CPS increased to: {self.cps}")
         else:
             print("CPS already at maximum (30)")
     
     def decrease_cps(self):
-        if self.cps > 0.5:  # Min 0.5 CPS
-            self.cps -= 0.5
+        if self.cps > 1:  # Min 1 CPS
+            self.cps -= 1
             print(f"CPS decreased to: {self.cps}")
         else:
-            print("CPS already at minimum (0.5)")
+            print("CPS already at minimum (1)")
     
     def quit_clicker(self):
         print("Quitting autoclicker...")
         self.stop_clicking()
         self.keyboard_listener.stop()
+        #exit successfully
         sys.exit(0)
     
     def run(self):
@@ -107,6 +108,7 @@ class AutoClicker:
         try:
             self.keyboard_listener.start()
             self.keyboard_listener.join()
+        #ctrl C to quit
         except KeyboardInterrupt:
             print("\nQuitting...")
             self.quit_clicker()
@@ -118,7 +120,9 @@ def main():
         clicker.run()
     except Exception as e:
         print(f"Error: {e}")
+        #back to terminal
         sys.exit(1)
 
+#makes code importable by other scripts without running main()
 if __name__ == "__main__":
     main() 
