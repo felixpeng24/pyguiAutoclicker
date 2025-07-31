@@ -70,13 +70,21 @@ class AutoClicker:
             print("Autoclicker STOPPED")
     
     def click_loop(self):
+        click_count = 0
         while self.is_running:
             try:
                 # Calculate interval based on CPS, min interval to control clicks per second
                 interval = max(1.0 / self.cps, self.min_interval)
                 
-                # Perform click
+                # Perform click 
                 pyautogui.click()
+                
+                # Increment click counter and print every 20 click, debugging
+                click_count += 1
+                if click_count % 20 == 0:
+                    print(f"Click count: {click_count}")
+
+                # Debugging to see if clicks are being made
                 time.sleep(interval)
             except Exception as e:
                 print(f"Error in click loop: {e}")
